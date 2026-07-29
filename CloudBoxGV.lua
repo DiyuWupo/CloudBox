@@ -54,16 +54,17 @@ local THEME_WARNING     = colors.yellow     -- "SETUP NEEDED" message
 -- THIS SCRIPT and updates itself if one is found.
 --
 -- This is separate from your music library above — it's
--- just how Diyu pushes out bug fixes and new features. It
--- reuses the same GITHUB_USERNAME/REPO/BRANCH from the
--- MUSIC SOURCE section above, just looking for a different
--- filename in that repo.
+-- just how Diyu pushes out bug fixes and new features, and
+-- can live in a totally different repo than your music.
 -- ====================================================
-local GITHUB_SCRIPT_FILENAME = "cloudbox_buttons.lua"   -- <-- the filename this script is saved as in your repo
+local GITHUB_SCRIPT_USERNAME = "DiyuWupo"          -- <-- GitHub username where the script lives
+local GITHUB_SCRIPT_REPO     = "CloudBox"          -- <-- repo name where the script lives
+local GITHUB_SCRIPT_BRANCH   = "main"              -- <-- almost always "main"
+local GITHUB_SCRIPT_FILENAME = "CloudBoxGV.lua"    -- <-- the filename this script is saved as in that repo
 local scriptArgs = { ... }
 
 local function selfUpdate()
-    local url = "https://raw.githubusercontent.com/" .. GITHUB_USERNAME .. "/" .. GITHUB_REPO .. "/" .. GITHUB_BRANCH .. "/" .. GITHUB_SCRIPT_FILENAME
+    local url = "https://raw.githubusercontent.com/" .. GITHUB_SCRIPT_USERNAME .. "/" .. GITHUB_SCRIPT_REPO .. "/" .. GITHUB_SCRIPT_BRANCH .. "/" .. GITHUB_SCRIPT_FILENAME
     http.request(url)
     local timer = os.startTimer(5)
     local newCode = nil
