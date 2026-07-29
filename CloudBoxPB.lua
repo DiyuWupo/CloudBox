@@ -206,9 +206,11 @@ local buttons = {}
 local sliderBar = { x1 = 1, x2 = 1, y = 1 }
 
 local volume = 1.0
-local VOLUME_STEP = 0.25
+local VOLUME_STEP = 0.05
 local VOLUME_MIN = 0
-local VOLUME_MAX = 3
+local VOLUME_MAX = 1   -- CC:Tweaked speakers can technically go up to 3, but anything
+                       -- above 1 (100%) amplifies past the audio's natural range and
+                       -- clips/distorts — 1 is the loudest it can go without crackling
 
 local function statusText()
     local pct = math.floor(volume * 100 + 0.5)
@@ -511,6 +513,9 @@ while true do
                     startIdx, endIdx = drawList(selected, statusText())
                 end
             end
+        end
+    end
+end
         end
     end
 end
