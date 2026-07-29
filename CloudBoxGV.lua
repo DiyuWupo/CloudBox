@@ -215,6 +215,14 @@ local VOLUME_MIN = 0
 local VOLUME_MAX = 1   -- CC:Tweaked speakers can technically go up to 3, but anything
                        -- above 1 (100%) amplifies past the audio's natural range and
                        -- clips/distorts — 1 is the loudest it can go without crackling
+--
+-- NOTE: even at 100% (max), some songs may still have a faint "record
+-- player" hiss/crackle, especially at higher volume. That's not a bug
+-- in this script — DFPWM (the audio format speakers use) is a lossy
+-- 1-bit codec that bakes in a bit of quantization noise at encode time.
+-- It's just replaying exactly what's in the file. If a specific song
+-- is noticeably worse than others, re-encoding it at a lower/more
+-- normalized volume before converting to .dfpwm usually helps.
 
 local function statusText()
     local pct = math.floor(volume * 100 + 0.5)
