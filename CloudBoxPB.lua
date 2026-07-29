@@ -55,9 +55,6 @@ local THEME_WARNING     = colors.yellow     -- "SETUP NEEDED" message
 --
 -- This is separate from your music library above — it's
 -- just how Diyu pushes out bug fixes and new features.
--- If you've forked this to make your own version, put your
--- own paste's ID below (or delete this whole block if you
--- don't want auto-updates at all).
 -- ====================================================
 local PASTEBIN_ID = "7rvEUn3B"   -- <-- change only if this is YOUR OWN forked paste
 local scriptArgs = { ... }
