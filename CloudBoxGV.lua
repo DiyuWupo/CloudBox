@@ -363,6 +363,12 @@ local currentAudio = nil
 local stopRequested = false
 local jumpToIndex = nil   -- set if the user clicks a different song mid-playback
 
+local function scrollBarIndexFromY(y)
+    local rel = (y - LIST_TOP) / math.max(1, (LIST_BOTTOM - LIST_TOP))
+    rel = math.max(0, math.min(1, rel))
+    return math.floor(rel * (#songs - 1) + 0.5) + 1
+end
+
 local function playSong(index, selected, startIdx, endIdx)
     stopRequested = false
     jumpToIndex = nil
@@ -407,9 +413,25 @@ local function playSong(index, selected, startIdx, endIdx)
             if ev[1] == "speaker_audio_empty" then
                 sent = speaker.playAudio(decoded, volume)
 
+            elseif ev[1] == "mouse_scroll" then
+                local direction = ev[2]
+                if direction == -1 and selected > 1 then
+                    selected = selected - 1
+                    startIdx, endIdx = drawList(selected, "Streaming: " .. songs[index].name)
+                elseif direction == 1 and selected < #songs then
+                    selected = selected + 1
+                    startIdx, endIdx = drawList(selected, "Streaming: " .. songs[index].name)
+                end
+
             elseif ev[1] == "mouse_drag" then
                 local _, x, y = ev[2], ev[3], ev[4]
-                if onSlider(x, y) then
+                if #songs > LIST_H and x == w and y >= LIST_TOP and y <= LIST_BOTTOM then
+                    local newSelected = scrollBarIndexFromY(y)
+                    if newSelected ~= selected then
+                        selected = newSelected
+                        startIdx, endIdx = drawList(selected, "Streaming: " .. songs[index].name)
+                    end
+                elseif onSlider(x, y) then
                     volume = volumeFromX(x)
                     drawHeader(statusText())
                     drawFooter()
@@ -426,6 +448,9 @@ local function playSong(index, selected, startIdx, endIdx)
                 elseif clickedButton("QUIT", x, y) then
                     stopRequested = true
                     jumpToIndex = "QUIT"
+                elseif #songs > LIST_H and x == w and y >= LIST_TOP and y <= LIST_BOTTOM then
+                    selected = scrollBarIndexFromY(y)
+                    startIdx, endIdx = drawList(selected, "Streaming: " .. songs[index].name)
                 elseif startIdx and y >= LIST_TOP and y <= LIST_BOTTOM then
                     local clickedIndex = startIdx + (y - LIST_TOP)
                     if clickedIndex >= startIdx and clickedIndex <= endIdx and clickedIndex ~= index then
@@ -525,12 +550,6 @@ local function runPlayback(index)
             selected = index
         end
     end
-end
-
-local function scrollBarIndexFromY(y)
-    local rel = (y - LIST_TOP) / math.max(1, (LIST_BOTTOM - LIST_TOP))
-    rel = math.max(0, math.min(1, rel))
-    return math.floor(rel * (#songs - 1) + 0.5) + 1
 end
 
 while true do
