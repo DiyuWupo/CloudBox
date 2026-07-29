@@ -378,8 +378,24 @@ local function playSong(index, selected, startIdx, endIdx)
     currentAudio = audioResponse
     local decoder = dfpwm.make_decoder()
 
+    -- Peek at the start of the file before decoding anything. If GitHub
+    -- served us a Git LFS pointer (happens automatically for large files)
+    -- or an HTML error page instead of real audio, decoding it as DFPWM
+    -- produces a harsh screech and dies almost instantly. Catch that here
+    -- instead and skip the track with a clear message.
+    local chunk = audioResponse.read(16 * 1024)
+    if chunk then
+        local head = chunk:sub(1, 200)
+        if head:find("git%-lfs") or head:find("<!DOCTYPE") or head:find("<html") then
+            audioResponse.close()
+            currentAudio = nil
+            drawList(selected, "Skipped: not a real audio file (check Git LFS on this repo)")
+            sleep(3)
+            return
+        end
+    end
+
     while not stopRequested do
-        local chunk = audioResponse.read(16 * 1024)
         if not chunk then break end
 
         local decoded = decoder(chunk)
@@ -419,6 +435,8 @@ local function playSong(index, selected, startIdx, endIdx)
                 end
             end
         end
+
+        chunk = audioResponse.read(16 * 1024)
     end
     audioResponse.close()
     currentAudio = nil
@@ -431,6 +449,55 @@ local quitRequested = false
 
 -- runs playSong, and if the user clicked a different track mid-song,
 -- keeps chaining into that track instead of dropping the click
+local function waitBetweenSongs(nextIndex)
+    selected = nextIndex
+    local deadline = os.clock() + 3
+
+    while true do
+        local remaining = math.max(0, math.ceil(deadline - os.clock()))
+        startIdx, endIdx = drawList(selected, "Next up: " .. songs[nextIndex].name .. " (" .. remaining .. "s)")
+        if remaining <= 0 then
+            return nextIndex
+        end
+
+        local timer = os.startTimer(0.25)
+        local advancing = false
+        while not advancing do
+            local ev = { os.pullEvent() }
+            if ev[1] == "timer" and ev[2] == timer then
+                advancing = true
+
+            elseif ev[1] == "mouse_drag" then
+                local _, x, y = ev[2], ev[3], ev[4]
+                if onSlider(x, y) then
+                    volume = volumeFromX(x)
+                    drawHeader(statusText())
+                    drawFooter()
+                end
+
+            elseif ev[1] == "mouse_click" or ev[1] == "monitor_touch" then
+                local _, x, y = ev[2], ev[3], ev[4]
+                if clickedButton("STOP", x, y) then
+                    return nil
+                elseif clickedButton("QUIT", x, y) then
+                    quitRequested = true
+                    return nil
+                elseif onSlider(x, y) then
+                    volume = volumeFromX(x)
+                    drawHeader(statusText())
+                    drawFooter()
+                elseif y >= LIST_TOP and y <= LIST_BOTTOM then
+                    local clickedIndex = startIdx + (y - LIST_TOP)
+                    if clickedIndex >= startIdx and clickedIndex <= endIdx then
+                        selected = clickedIndex
+                        return clickedIndex
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function runPlayback(index)
     while true do
         playSong(index, index, startIdx, endIdx)
@@ -440,8 +507,22 @@ local function runPlayback(index)
         elseif jumpToIndex then
             index = jumpToIndex
             selected = index
-        else
+        elseif stopRequested then
             return
+        else
+            -- song finished naturally (not stopped by the user) —
+            -- wait a few seconds, then auto-advance, looping back
+            -- to the first song after the last one
+            local nextIndex = index + 1
+            if nextIndex > #songs then nextIndex = 1 end
+            local chosen = waitBetweenSongs(nextIndex)
+            if quitRequested then
+                return
+            elseif chosen == nil then
+                return
+            end
+            index = chosen
+            selected = index
         end
     end
 end
