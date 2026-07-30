@@ -370,6 +370,9 @@ end
 local currentAudio = nil
 local stopRequested = false
 local jumpToIndex = nil   -- set if the user clicks a different song mid-playback
+local selected = 1
+local startIdx, endIdx = drawList(selected, statusText())
+local quitRequested = false
 
 local function scrollBarIndexFromY(y)
     local rel = (y - LIST_TOP) / math.max(1, (LIST_BOTTOM - LIST_TOP))
@@ -377,10 +380,11 @@ local function scrollBarIndexFromY(y)
     return math.floor(rel * (#songs - 1) + 0.5) + 1
 end
 
-local function playSong(index, selected, startIdx, endIdx)
+local function playSong(index)
     stopRequested = false
     jumpToIndex = nil
-    drawList(selected, "Streaming: " .. songs[index].name)
+    selected = index
+    startIdx, endIdx = drawList(selected, "Streaming: " .. songs[index].name)
 
     local audioResponse = http.get(songs[index].url, nil, true)
     if not audioResponse then
@@ -476,9 +480,6 @@ local function playSong(index, selected, startIdx, endIdx)
 end
 
 -- ============ Main loop ============
-local selected = 1
-local startIdx, endIdx = drawList(selected, statusText())
-local quitRequested = false
 
 -- runs playSong, and if the user clicked a different track mid-song,
 -- keeps chaining into that track instead of dropping the click
@@ -533,7 +534,7 @@ end
 
 local function runPlayback(index)
     while true do
-        playSong(index, index, startIdx, endIdx)
+        playSong(index)
         if jumpToIndex == "QUIT" then
             quitRequested = true
             return
