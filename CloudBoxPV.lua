@@ -304,7 +304,6 @@ local function drawFooter()
 end
 
 local function drawList(selected, status)
-    clearScreen(THEME_BACKGROUND)
     drawHeader(status)
     drawFooter()
 
@@ -325,6 +324,18 @@ local function drawList(selected, status)
         end
         term.setCursorPos(1, y)
         term.write(label)
+    end
+
+    -- if there are fewer songs than fit on screen, blank out the
+    -- remaining rows so nothing stale is left behind (since we no
+    -- longer do a full-screen clear before redrawing, to avoid flicker)
+    local drawnRows = endIdx - startIdx + 1
+    if drawnRows < LIST_H then
+        setColors(THEME_BACKGROUND, THEME_TEXT)
+        for i = drawnRows, LIST_H - 1 do
+            term.setCursorPos(1, LIST_TOP + i)
+            term.write(string.rep(" ", w))
+        end
     end
 
     -- simple scrollbar
